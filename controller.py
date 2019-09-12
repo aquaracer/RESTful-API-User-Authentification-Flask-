@@ -3,7 +3,6 @@ import jwt
 import datetime, calendar
 from models import User, session
 
-
 def list_of_users(current_page:int, current_items_per_page:int): # выдача списка пользователей с пагинацией
     query = session.query(User)  # загружаем всю базу из класса
     page = SqlalchemyOrmPage(query, page=current_page, items_per_page=current_items_per_page)
@@ -21,15 +20,14 @@ def registration(login:str, password:str): # регистрация пользо
 def get_user_info(current_id:str): #  просмотр данных о пользователе
     query = session.query(User) # загружаем всю базу из класса
     login = []
-    for element in session.query(User.login).filter(User.id == current_id):
-        login.append(element)
-    if len(login) > 0:
-        flag = True
-        report = login[0][0]
+    login = session.query(User.login).filter(User.id == current_id).first()
+    if login == None:
+        flag = False
+        report = '400'
         return flag, report
     else:
-        flag = False
-        report = 'user does not exist'
+        flag = True
+        report = login[0]
         return flag, report
 
 def delete_user(current_id:str): # удаление пользователя
@@ -58,9 +56,7 @@ def auth(current_login:str, current_password:str): # авторизация с �
         return flag, report
     else:
         user_id = session.query(User.id).filter(User.login == current_login).first()
-        print(user_id)
         user_id = user_id[0]
-        print(user_id)
         exp_date = datetime.datetime(2019, 12, 14, 0, 0, 0)
         unix_exp_date = calendar.timegm(exp_date.timetuple())
         payload = {"user_id": user_id, "iss": "flask_auth_application", "exp": unix_exp_date}
