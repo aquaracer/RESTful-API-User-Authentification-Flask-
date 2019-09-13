@@ -7,60 +7,101 @@ app = Flask(__name__)
 def hello_world():
     return 'Welcome to User Authorization Page!'
 
-@app.route('/users/<page_number>/<page_size>', methods=['GET'])
-def users_list(page_number:str, page_size:str):
-    page_number = int(page_number)
-    page_size = int(page_size)
-    final_list = controller.list_of_users(page_number, page_size)
-    return jsonify({'list of users': final_list})
+
+@app.route('/users/<int:page_number>/<int:page_size>', methods=['GET'])
+def users_list(page_number:int, page_size:int):
+    result = {'data':'', 'error':''}
+    code = 200
+    try:
+        final_list = controller.list_of_users(page_number, page_size)
+        result['data'] = final_list
+    except Exception as e:
+        result['error']=repr(e)
+        print(result) # выводим лог в stdout
+        code = 400
+    return jsonify(result), code
+
 
 @app.route('/user', methods=['POST'])
 def user_registration():
-    json = request.get_json()
+    json = request.get_json() # получаем json из POST запроса
     login = json['login']
     password = json['password']
-    controller.registration(login, password)
-    return "200"
+    result = {'data': '', 'error': ''}
+    code = 200
+    try:
+        controller.registration(login, password) # пытаемся зарегистрировать пользователя
+        result['data'] = 'new user has been registered successfully'
+    except Exception as e:
+        result['error'] = repr(e)
+        print(result) # выводим лог в stdout
+        code = 400
+    return jsonify(result), code
+
 
 @app.route('/user/<id>', methods=['GET'])
 def get_user_id(id:str):
-    flag, report = controller.get_user_info(id)
-    if flag:
-        return report
-    else:
-        return "400"
+    result = {'data': '', 'error': ''}
+    code = 200
+    try:
+        login = controller.get_user_info(id)  # пытаемся получить информацию о пользователе по ID
+        result['data'] = login
+    except Exception as e:
+        result['error'] = repr(e)
+        print(result)  # выводим лог в stdout
+        code = 400
+    return jsonify(result), code
+
 
 @app.route('/user', methods=['DELETE'])
 def delete_info():
     json = request.get_json(force=True)
     user_id = json['user_id']
-    operation_result = controller.delete_user(user_id)
-    if operation_result == 1:
-        return "200"
-    else:
-        return "400"
+    result = {'data': '', 'error': ''}
+    code = 200
+    try:
+        report = controller.delete_user(user_id)  # пытаемся удалить информацию о пользователе по ID
+        result['data'] = report
+    except Exception as e:
+        result['error'] = repr(e)
+        print(result)  # выводим лог в stdout
+        code = 400
+    return jsonify(result), code
+
 
 @app.route('/user', methods=['PATCH'])
 def update_info():
     json = request.get_json(force=True)
     user_id = json['user_id']
     password = json['password']
-    operation_result = controller.update_user(user_id, password)
-    if operation_result == 1:
-        return "200"
-    else:
-        return "400"
+    result = {'data': '', 'error': ''}
+    code = 200
+    try:
+        report = controller.update_user(user_id, password)  # пытаемся удалить информацию о пользователе по ID
+        result['data'] = report
+    except Exception as e:
+        result['error'] = repr(e)
+        print(result)  # выводим лог в stdout
+        code = 400
+    return jsonify(result), code
+
 
 @app.route('/login', methods=['POST'])
 def user_auth():
     json = request.get_json(force=True)
     login = json['login']
     password = json['password']
-    flag, report = controller.auth(login, password)
-    if flag:
-        return jsonify({'token': str(report)})
-    else:
-        return report
+    result = {'data': '', 'error': ''}
+    code = 200
+    try:
+        token = controller.auth(login, password)  # пытаемся пройти аутентийикацию и получить JWT токен
+        result['data'] = str(token)
+    except Exception as e:
+        result['error'] = repr(e)
+        print(result)  # выводим лог в stdout
+        code = 400
+    return jsonify(result), code
+
 
 if __name__ == '__main__':
     app.run()
