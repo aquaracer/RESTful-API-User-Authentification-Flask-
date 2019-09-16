@@ -76,3 +76,6 @@ def auth(current_login:str, current_password:str): # авторизация с �
             payload = {"user_id": user_id, "iss": "flask_auth_application", "exp": unix_exp_date}
             token = jwt.encode(payload, '645645', algorithm='HS256')
             return token
+
+
+#TEST
