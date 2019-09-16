@@ -39,8 +39,8 @@ def user_registration():
     return jsonify(result), code
 
 
-@app.route('/user/<id>', methods=['GET'])
-def get_user_id(id:str):
+@app.route('/user/<int:id>', methods=['GET'])
+def get_user_id(id:int):
     result = {'data': '', 'error': ''}
     code = 200
     try:
@@ -94,7 +94,7 @@ def user_auth():
     result = {'data': '', 'error': ''}
     code = 200
     try:
-        token = controller.auth(login, password)  # пытаемся пройти аутентийикацию и получить JWT токен
+        token = controller.auth(login, password)  # пытаемся пройти аутентификацию и получить JWT токен
         result['data'] = str(token)
     except Exception as e:
         result['error'] = repr(e)

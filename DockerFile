@@ -1,0 +1,7 @@
+FROM python:3.6-slim
+
+RUN apt-get update
+
+FROM ...
+COPY  . /usr/src/myapp
+WORKDIR /usr/src/myapp

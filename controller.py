@@ -16,6 +16,9 @@ def list_of_users(current_page:int, current_items_per_page:int): # выдача 
 
 
 def registration(login:str, password:str): # регистрация пользователя
+    existed_user = session.query(User.login).filter(User.login == login).first() # проверяем есть ли уже в базе пользователь с заданным логином
+    if existed_user != None:
+        raise Exception('This login is busy. Please create another')
     password = password.encode('utf-8') # переводим в кодировку utf-8 (необходимо для хеширования)
     hashed_password = bcrypt.hashpw(password, bcrypt.gensalt()) # хешируем пароль
     hashed_password = hashed_password.decode('utf-8')
@@ -24,7 +27,7 @@ def registration(login:str, password:str): # регистрация пользо
     session.commit()
 
 
-def get_user_info(current_id:str): #  просмотр данных о пользователе
+def get_user_info(current_id:int): #  просмотр данных о пользователе
     login = session.query(User.login).filter(User.id == current_id).first()
     if login == None:
         raise Exception('There is no such user in database')
