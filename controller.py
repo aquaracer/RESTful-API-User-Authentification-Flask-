@@ -77,5 +77,3 @@ def auth(current_login:str, current_password:str): # авторизация с �
             token = jwt.encode(payload, '645645', algorithm='HS256')
             return token
 
-
-#TEST
