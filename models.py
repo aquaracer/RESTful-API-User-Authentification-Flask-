@@ -12,7 +12,7 @@ Base = declarative_base()
 class User(Base):  # Декларативное создание таблицы, класса и отображения за один раз
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    login = Column(String)
+    login = Column(String, unique=True)
     password = Column(String)
 
     def __init__(self, login, password):
