@@ -3,9 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine('postgresql+psycopg2://user_2:222@localhost/base_users')  # соединяемся с базой PostGres
-Session = sessionmaker(bind=engine)  # создаем сессию
-session = Session()
+engine = create_engine('postgresql+psycopg2://user_2:222@localhost/base_users')  # соединяемся с базой PostgresSQL
+Session = sessionmaker(bind=engine)
 
 Base = declarative_base()
 
