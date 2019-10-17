@@ -18,6 +18,7 @@ def connect():
     finally:
         session.close()
 
+
 def list_of_users(current_page:int, current_items_per_page:int): # выдача списка пользователей с пагинацией
     with connect() as session:
         query = session.query(User)  # загружаем всю базу из класса
@@ -29,7 +30,7 @@ def list_of_users(current_page:int, current_items_per_page:int): # выдача 
     return final_list
 
 
-def registration(login:str, password:str): # регистрация пользователя
+def registration(login:str, password:str, admin:bool): # регистрация пользователя
     with connect() as session:
         existed_user = session.query(User.login).filter(User.login == login).first() # проверяем есть ли уже в базе пользователь с заданным логином
     if existed_user != None:
@@ -37,7 +38,7 @@ def registration(login:str, password:str): # регистрация пользо
     password = password.encode('utf-8') # переводим в кодировку utf-8 (необходимо для хеширования)
     hashed_password = bcrypt.hashpw(password, bcrypt.gensalt()) # хешируем пароль
     hashed_password = hashed_password.decode('utf-8')
-    new_user_info = User(login, hashed_password)
+    new_user_info = User(login, hashed_password, admin)
     with connect() as session:
         session.add(new_user_info) # добавляем в базу
 
@@ -90,9 +91,11 @@ def auth(current_login:str, current_password:str): # авторизация с �
         else:
             with connect() as session:
                 user_id = session.query(User.id).filter(User.login == current_login).first()
+                is_admin = session.query(User.admin).filter(User.login == current_login).first()
+            print(is_admin)
             exp_date = datetime.datetime(2019, 12, 14, 0, 0, 0)
             unix_exp_date = calendar.timegm(exp_date.timetuple())
-            payload = {"user_id": user_id, "iss": "flask_auth_application", "exp": unix_exp_date}
+            payload = {"user_id": user_id, "is_admin": is_admin, "iss": "flask_auth_application", "exp": unix_exp_date}
             token = jwt.encode(payload, '645645', algorithm='HS256')
             token = str(token)
             return token

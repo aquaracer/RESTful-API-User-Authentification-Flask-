@@ -1,7 +1,11 @@
 from flask import Flask, jsonify, request
 from app import controller, models
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
+
 
 app = Flask(__name__)
+
 
 @app.route('/')
 def hello_world():
@@ -27,10 +31,11 @@ def user_registration():
     json = request.get_json() # получаем json из POST запроса
     login = json['login']
     password = json['password']
+    admin = json['admin']
     result = {'data': '', 'error': ''}
     code = 200
     try:
-        controller.registration(login, password) # пытаемся зарегистрировать пользователя
+        controller.registration(login, password, admin) # пытаемся зарегистрировать пользователя
         result['data'] = 'new user has been registered successfully'
     except Exception as e:
         result['error'] = repr(e)
@@ -104,4 +109,5 @@ def user_auth():
 
 
 if __name__ == '__main__':
-    app.run()
+    server = pywsgi.WSGIServer(('127.0.0.1', 5000), app, handler_class=WebSocketHandler)
+    server.serve_forever()
