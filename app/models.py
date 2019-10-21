@@ -2,10 +2,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
+import config
 
-engine = create_engine('postgresql+psycopg2://user_2:222@localhost/base_users')  # соединяемся с базой PostgresSQL
+
+engine = create_engine(config.DevelopementConfig.SQLALCHEMY_DATABASE_URI)  # соединяемся с базой PostgresSQL
+
 Session = sessionmaker(bind=engine)
-
 Base = declarative_base()
 
 class User(Base):  # Декларативное создание таблицы, класса и отображения за один раз

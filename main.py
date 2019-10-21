@@ -2,10 +2,10 @@ from flask import Flask, jsonify, request
 from app import controller, models
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
-
+import config
 
 app = Flask(__name__)
-
+app.debug = config.DevelopementConfig.DEBUG
 
 @app.route('/')
 def hello_world():
