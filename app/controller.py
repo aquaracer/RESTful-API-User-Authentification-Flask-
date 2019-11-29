@@ -24,10 +24,7 @@ def list_of_users(current_page:int, current_items_per_page:int): # выдача 
         query = session.query(User)  # загружаем всю базу из класса
     page = SqlalchemyOrmPage(query, page=current_page, items_per_page=current_items_per_page)
     list_of_users = page.items
-    final_list = []
-    for element in list_of_users:
-        final_list.append(element.login)
-    return final_list
+    return [element.login for element in list_of_users]
 
 
 def registration(login:str, password:str, admin:bool, expiration_date:str): # регистрация пользователя
