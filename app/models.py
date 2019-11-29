@@ -16,13 +16,15 @@ class User(Base):  # Декларативное создание таблицы,
     login = Column(String, unique=True)
     password = Column(String)
     admin = Column(Boolean)
+    expiration_date = Column(String)
 
-    def __init__(self, login, password, admin):
+    def __init__(self, login, password, admin, expiration_date):
         self.login = login
         self.password = password
         self.admin = admin
+        self.expiration_date = expiration_date
 
     def __repr__(self):
-        return "<User('%s', '%s', '%s')>" % (self.login, self.password, self.admin)
+        return "<User('%s', '%s', '%s', '%s')>" % (self.login, self.password, self.admin, self.expiration_date)
 
 Base.metadata.create_all(engine)
