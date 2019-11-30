@@ -14,12 +14,15 @@ def test_users_list(page_number, page_size, expected):
     assert bool(response['data']) == expected
 
 
-@pytest.mark.parametrize("login_input, password_input, admin_status_input, expiration_date_input, key_input, expected",
-                        [("Kolya", "444", True, "2019/11/29", "data", 'new user has been registered successfully'),
-                         ("Olya333", "7772777", False, "2019/11/29", "error", """Exception('This login is busy. Please create another')"""),
-                         ("Masha", "7772777", "admin", "2019/11/29", "error", """Exception('invalid format of admin_status')"""),
-                         ("Lena", "", True, "2019/11/29", "error", """Exception('invalid format of password. password should contain at least 3 symbols')"""),
-                         ])
+@pytest.mark.parametrize(
+    "login_input, password_input, admin_status_input, expiration_date_input, key_input, expected",
+    [
+        ("Kolya", "444", True, "2019/11/29", "data", 'new user has been registered successfully'),
+        ("Olya333", "7772777", False, "2019/11/29", "error", """Exception('This login is busy. Please create another')"""),
+        ("Masha", "7772777", "admin", "2019/11/29", "error", """Exception('invalid format of admin_status')"""),
+        ("Lena", "", True, "2019/11/29", "error", """Exception('invalid format of password. password should contain at least 3 symbols')"""),
+    ]
+)
 def test_user_registration(login_input, password_input, admin_status_input, expiration_date_input, key_input, expected):
     url = 'http://localhost:5000/user'
     data = {'login': login_input, 'password': password_input, "admin": admin_status_input, 'expiration_date' : expiration_date_input}
