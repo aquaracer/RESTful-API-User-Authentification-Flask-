@@ -1,6 +1,22 @@
+from const import HTTP_OK
 import requests
 import json
 import pytest
+from app.models import User, Session
+from contextlib import contextmanager
+
+
+@contextmanager
+def connect():
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 @pytest.mark.parametrize("page_number, page_size, expected",
@@ -8,58 +24,191 @@ import pytest
      ('3', '1', True),
      ('5', '5', False) ])
 def test_users_list(page_number, page_size, expected):
+    url = 'http://localhost:5000/user'
+    data = {"login": "user_1", "password": "111",
+            "admin" : False, "expiration_date" : "2019/12/29"  }
+    response = requests.post(url, json=data)
+    data = {"login": "user_2", "password": "222",
+            "admin": False, "expiration_date": "2019/12/29"}
+    response = requests.post(url, json=data)
+    data = {"login": "user_3", "password": "333",
+            "admin": False, "expiration_date": "2019/12/29"}
+    response = requests.post(url, json=data)
+    data = {"login": "user_4", "password": "444",
+            "admin": False, "expiration_date": "2019/12/29"}
+    response = requests.post(url, json=data) # вносим тестовые данные в таблицу
+
     url = 'http://localhost:5000/users/{0}/{1}'.format(page_number, page_size)
     response = requests.get(url)
     response = response.json()
+    with connect() as session:  # очищаем таблицу
+        operation_result = session.query(User).delete()
     assert bool(response['data']) == expected
 
 
 @pytest.mark.parametrize(
-    "login_input, password_input, admin_status_input, expiration_date_input, key_input, expected",
+    "JSON_input, expected",
     [
-        ("Kolya", "444", True, "2019/11/29", "data", 'new user has been registered successfully'),
-        ("Olya333", "7772777", False, "2019/11/29", "error", """Exception('This login is busy. Please create another')"""),
-        ("Masha", "7772777", "admin", "2019/11/29", "error", """Exception('invalid format of admin_status')"""),
-        ("Lena", "", True, "2019/11/29", "error", """Exception('invalid format of password. password should contain at least 3 symbols')"""),
+        ('{}', "JSON does not contain required data"),
+        ({ 'password': '111', "admin": False, 'expiration_date' : '2019/12/31'}, "JSON does not contain required data"),
+        ({'login': 'user_1', "admin": False, 'expiration_date' : '2019/12/31'}, "JSON does not contain required data" ),
+        ({'login': 'user_1', 'password': '111', 'expiration_date' : '2019/12/31'}, "JSON does not contain required data"),
+        ({'login': 'user_1', 'password': '111', "admin": False}, "JSON does not contain required data"),
+        ({'login': 'user_1', 'password': '111', "admin": '111', 'expiration_date': '2019/12/31'}, "Invalid format of admin status"),
+        ({'login': 'user_1', 'password': '111', "admin": False, 'expiration_date': '20191231'},
+         "Invalid expiration_date. Please enter expiration_date again in format YYYY/MM/DD"),
+        ({'login': 'user_1', 'password': '111', "admin": False, 'expiration_date': '2019/12/31'},
+         """Exception('This login is busy. Please create another')""")
     ]
 )
-def test_user_registration(login_input, password_input, admin_status_input, expiration_date_input, key_input, expected):
+def test_user_registration_negative(JSON_input, expected):
+     url = 'http://localhost:5000/user'
+     first_data = {'login': 'user_1', 'password': '111', "admin": False, 'expiration_date' : '2019/12/31'}
+     requests.post(url, json=first_data)
+     response = requests.post(url, json=JSON_input)
+     response = response.json()
+     with connect() as session:  # очищаем таблицу
+         operation_result = session.query(User).delete()
+     assert response['error'] == expected
+
+
+def test_user_registration_positive():
     url = 'http://localhost:5000/user'
-    data = {'login': login_input, 'password': password_input, "admin": admin_status_input, 'expiration_date' : expiration_date_input}
+    data = {'login': 'user_1', 'password': '111', "admin": False, 'expiration_date': '2019/12/31'}
     response = requests.post(url, json=data)
     response = response.json()
-    assert response[key_input] == expected
+    with connect() as session:  # очищаем таблицу
+        operation_result = session.query(User).delete()
+    assert response['data'] == 'new user has been registered successfully'
 
 
-@pytest.mark.parametrize("id_input, type_of_assertion, key_input, expected",
-                         [(1, 'logical', 'data', True),
-                          (32, 'string', 'error', """Exception('There is no such user in database')""")
-                         ])
-def test_get_user_id(id_input, type_of_assertion, key_input, expected):
-    url = 'http://localhost:5000/user/{}'.format(id_input)
+def test_get_user_id_positive ():
+    url = 'http://localhost:5000/user'
+    first_data = {"login": "user_2", "password": "111", "admin": False, "expiration_date": '2019/12/31'}
+    requests.post(url, json=first_data)  # регистрируем юзера
+    with connect() as session: # получаем ID по логину
+        id = session.query(User.id).filter(User.login == "user_2").first()
+    url = 'http://localhost:5000/user/{}'.format(id[0])
     response = requests.get(url)
     response = response.json()
-    if type_of_assertion == 'logical':
-        assert bool(response[key_input]) == expected
-    else:
-        assert response[key_input] == expected
+    with connect() as session:
+        operation_result = session.query(User).delete()
+    assert response['data'][0] == 'user_2'
 
 
-@pytest.mark.parametrize("login_input, password_input, key_input, expected",
-    [('222', '333', 'error', """Exception('Access denied. This login does not exist')"""),
-     ("Olya333", "7772777", 'data',  "b'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjpbMV0sImlzX2FkbWluIjpbZmFsc2VdLCJpc3MiOiJmbGFza19hdXRoX2FwcGxpY2F0aW9uIiwiZXhwIjoxNTc3NTc3NjAwfQ.ZqvZ2Zm2DXH_CMzTJkg0xtBqpr15128-l4B8McGdY_I'"),
-     ("Vasya", "111", 'error', """Exception('Access denied. Subscribe expired')""" )                         ])
-def test_auth(login_input, password_input, key_input, expected):
+def test_get_user_id_negative ():
+    url = 'http://localhost:5000/user'
+    first_data = {"login": "user_2", "password": "111", "admin": False, "expiration_date": '2019/12/31'}
+    requests.post(url, json=first_data)  # регистрируем юзера
+    with connect() as session: # получаем ID по логину
+        id = session.query(User.id).filter(User.login == "user_2").first()
+    id = int(id[0]) + 1
+    url = 'http://localhost:5000/user/{}'.format(id)
+    response = requests.get(url)
+    response = response.json()
+    with connect() as session:
+        operation_result = session.query(User).delete()
+    assert response['error'] == """Exception('There is no such user in database')"""
+
+@pytest.mark.parametrize(
+    "json_input, expected",
+    [
+        ({}, "JSON does not contain field user_id" ),
+        ({"user_id": ''}, "user_id should contain at least one symbol"),
+        ({"user_id": '111222'}, """Exception('There is no such user in database')""" )
+    ]
+)
+def test_delete_info_negative(json_input, expected):
+    url = 'http://localhost:5000/user'
+    response = requests.delete(url, json=json_input)
+    response = response.json()
+    assert response['error'] == expected
+
+def test_delete_info_positive():
+    url = 'http://localhost:5000/user'
+    first_data = {"login": "user_2", "password": "111", "admin": False, "expiration_date": '2019/12/31'}
+    requests.post(url, json=first_data)  # регистрируем юзера
+    with connect() as session:
+        id = session.query(User.id).filter(User.login == "user_2").first()
+
+    url = 'http://localhost:5000/user'
+    json = {'user_id': id[0]}
+    response = requests.delete(url, json=json)
+    response = response.json()
+    assert response['data'] == 'user has been deleted'
+
+
+
+@pytest.mark.parametrize(
+     "json_input, expected",
+    [
+        ({}, "JSON does not contain required data" ),
+        ({"user_id": '35'}, "JSON does not contain required data" ),
+        ({"password": '35'}, "JSON does not contain required data" ),
+        ({"user_id": "", "password": '35'}, "User_id should contain at least one symbol" ),
+        ({"user_id": '35', "password": ''}, "Password should contain at least 3 symbols" ),
+        ({"user_id": '351', "password": '3555'}, """Exception('There is no such user in database')""" )
+
+    ]
+)
+def test_update_info_negative(json_input, expected):
+    url = 'http://localhost:5000/user'
+    response = requests.patch(url, json=json_input)
+    response = response.json()
+    assert response['error'] == expected
+
+
+def test_update_info_positive():
+    url = 'http://localhost:5000/user'
+    first_data = {"login": "user_2", "password": "111", "admin": False, "expiration_date": '2019/12/31'}
+    requests.post(url, json=first_data)  # регистрируем юзера
+    with connect() as session:
+        id = session.query(User.id).filter(User.login == "user_2").first()
+    url = 'http://localhost:5000/user'
+    data = {"user_id": id[0], "password": '222'}
+    response = requests.patch(url, json=data)
+    response = response.json()
+    with connect() as session:
+        operation_result = session.query(User).delete()
+    assert response['data'] == 'password has been updated'
+
+
+@pytest.mark.parametrize(
+    "JSON_input, expected",
+    [
+        ('{}', "JSON does not contain required data"),
+        ({ 'password': '111'}, "JSON does not contain required data"),
+        ({'login': 'user_1'}, "JSON does not contain required data" ),
+        ({'login': 'user_2', 'password': '222'}, """Exception('Access denied. This login does not exist')"""),
+        ({'login': 'user_1', 'password': '112'}, """Exception('Access denied. Invalid password')"""),
+        ({'login': 'user_1', 'password': '111'}, """Exception('Access denied. Subscribe expired')""")
+    ]
+)
+def test_auth_negative(JSON_input, expected):
+    url = 'http://localhost:5000/user'
+    first_data = {"login": "user_1", "password": "111", "admin": False, "expiration_date": '2019/11/30'}
+    requests.post(url, json=first_data)  # регистрируем юзера
+
     url = 'http://localhost:5000/login'
-    data = {'login': login_input, 'password': password_input}
+    response = requests.post(url, json=JSON_input)
+    response = response.json()
+    with connect() as session:
+        operation_result = session.query(User).delete()
+    assert response['error'] == expected
+
+
+def test_auth_positive():
+    url = 'http://localhost:5000/user'
+    first_data = {"login": "user_1", "password": "111", "admin": False, "expiration_date": '2019/12/31'}
+    requests.post(url, json=first_data)  # регистрируем юзера
+
+    url = 'http://localhost:5000/login'
+    data = {'login': 'user_1', 'password': '111'}
     response = requests.post(url, json=data)
     response = response.json()
-    assert response[key_input] == expected
+    with connect() as session:
+        operation_result = session.query(User).delete()
+    assert bool(response['data']) is True
 
 
 
-# def test_delete_info():
-#     pass
-#
-# def test_update_info():
-#     pass
