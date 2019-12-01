@@ -29,6 +29,28 @@ def users_list(page_number:int, page_size:int):
     return jsonify(result), status_code
 
 
+def _process_errors(data:tuple):
+    login, password, admin, expiration_date = data
+    ret = {}
+    if not len(login):
+        ret['error'] = "Login should contain at least one symbol"
+        print(result)  # выводим лог в stdout
+    if len(password) < 3:
+        ret['error'] = "Password should contain at least 3 symbols"
+        print(result)  # выводим лог в stdout
+    if type(admin) is not bool:
+        ret['error'] = "Invalid format of admin status"
+        print(result)  # выводим лог в stdout
+    if len(expiration_date) != 10:
+        ret['error'] = "Invalid expiration_date. Please enter expiration_date again in format YYYY/MM/DD"
+        print(result)  # выводим лог в stdout
+    status_code = HTTP_BAD_REQUEST
+    if ret:
+        return jsonify(result), status_code
+
+    
+HTTP_CREATED = 201
+
 @app.route('/user', methods=['POST'])
 def user_registration():
     result = {}
@@ -36,38 +58,21 @@ def user_registration():
     json = request.get_json() # получаем json из POST запроса
     try:
         login = json['login']
-        print('login ok')
         password = json['password']
-        print('password ok')
         admin = json['admin']
-        print('admin ok')
         expiration_date = json['expiration_date']
-        print('exp ok')
-        if len(login) < 1:
-            result['error'] = "Login should contain at least one symbol"
-            print(result)  # выводим лог в stdout
-            status_code = HTTP_BAD_REQUEST
-            return jsonify(result), status_code
-        if len(login) < 3:
-            result['error'] = "Password should contain at least 3 symbols"
-            print(result)  # выводим лог в stdout
-            status_code = HTTP_BAD_REQUEST
-            return jsonify(result), status_code
-        if type(admin) is not bool:
-            result['error'] = "Invalid format of admin status"
-            print(result)  # выводим лог в stdout
-            status_code = HTTP_BAD_REQUEST
-            return jsonify(result), status_code
-        if len(expiration_date) != 10:
-            result['error'] = "Invalid expiration_date. Please enter expiration_date again in format YYYY/MM/DD"
-            print(result)  # выводим лог в stdout
-            status_code = HTTP_BAD_REQUEST
-            return jsonify(result), status_code
+        error = _process_errors((login, password, admin, expiration_date))
+        if error:
+            return error
+    except KeyError es ex:
+        print(ex)
     except Exception as e:
         print(repr(e))  # выводим лог в stdout
+    finally:
         result['error'] = "JSON does not contain required data"
         status_code = HTTP_BAD_REQUEST
         return jsonify(result), status_code
+        
     try:
         controller.registration(login, password, admin, expiration_date) # пытаемся зарегистрировать пользователя
         result['data'] = 'new user has been registered successfully'
@@ -92,6 +97,17 @@ def get_user_id(id:int):
     return jsonify(result), status_code
 
 
+def take_action(func_name, *func_params):
+    try:
+        report = getattr(controller, func_name)(*func_params)  # пытаемся удалить информацию о пользователе по ID
+        result['data'] = report
+    except Exception as e:
+        result['error'] = repr(e)
+        print(result)  # выводим лог в stdout
+        status_code = HTTP_BAD_REQUEST
+    return result, status_code
+
+
 @app.route('/user', methods=['DELETE'])
 def delete_info():
     result = {}
@@ -109,13 +125,7 @@ def delete_info():
         print(repr(e))  # выводим лог в stdout
         status_code = HTTP_BAD_REQUEST
         return jsonify(result), status_code
-    try:
-        report = controller.delete_user(user_id)  # пытаемся удалить информацию о пользователе по ID
-        result['data'] = report
-    except Exception as e:
-        result['error'] = repr(e)
-        print(result)  # выводим лог в stdout
-        status_code = HTTP_BAD_REQUEST
+    result, status_code = take_action('delete_user', json.get('user_id'))
     return jsonify(result), status_code
 
 
@@ -142,13 +152,7 @@ def update_info():
         print(repr(e))  # выводим лог в stdout
         status_code = HTTP_BAD_REQUEST
         return jsonify(result), status_code
-    try:
-        report = controller.update_user(user_id, password)  # пытаемся удалить информацию о пользователе по ID
-        result['data'] = report
-    except Exception as e:
-        result['error'] = repr(e)
-        print(result)  # выводим лог в stdout
-        status_code = HTTP_BAD_REQUEST
+    result, status_code = take_action('update_user', user_id, password)
     return jsonify(result), status_code
 
 
@@ -165,13 +169,7 @@ def user_auth():
         print(repr(e))  # выводим лог в stdout
         status_code = HTTP_BAD_REQUEST
         return jsonify(result), status_code
-    try:
-        token = controller.auth(login, password)  # пытаемся пройти аутентификацию и получить JWT токен
-        result['data'] = str(token)
-    except Exception as e:
-        result['error'] = repr(e)
-        print(result)  # выводим лог в stdout
-        status_code = HTTP_NOT_FOUND
+    result, status_code = take_action('auth', login, password)
     return jsonify(result), status_code
 
 
