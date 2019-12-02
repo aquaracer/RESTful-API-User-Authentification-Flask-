@@ -10,25 +10,6 @@ app = Flask(__name__)
 app.debug = config.DevelopementConfig.DEBUG
 
 
-@app.route('/')
-def index():
-    return 'Welcome to User Authorization Page!'
-
-
-@app.route('/users/<int:page_number>/<int:page_size>', methods=['GET'])
-def users_list(page_number:int, page_size:int):
-    result = {}
-    status_code = HTTP_OK
-    try:
-        final_list = controller.list_of_users(page_number, page_size)
-        result['data'] = final_list
-    except Exception as e:
-        result['error']=repr(e)
-        print(result) # выводим лог в stdout
-        status_code = HTTP_BAD_REQUEST
-    return jsonify(result), status_code
-
-
 def _process_errors(data:tuple):
     login, password, admin, expiration_date = data
     ret = {}
@@ -48,7 +29,25 @@ def _process_errors(data:tuple):
     if ret:
         return jsonify(result), status_code
 
-    
+@app.route('/')
+def index():
+    return 'Welcome to User Authorization Page!'
+
+
+@app.route('/users/<int:page_number>/<int:page_size>', methods=['GET'])
+def users_list(page_number:int, page_size:int):
+    result = {}
+    status_code = HTTP_OK
+    try:
+        final_list = controller.list_of_users(page_number, page_size)
+        result['data'] = final_list
+    except Exception as e:
+        result['error']=repr(e)
+        print(result) # выводим лог в stdout
+        status_code = HTTP_BAD_REQUEST
+    return jsonify(result), status_code
+
+   
 HTTP_CREATED = 201
 
 @app.route('/user', methods=['POST'])
