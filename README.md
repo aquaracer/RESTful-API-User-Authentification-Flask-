@@ -11,12 +11,12 @@
 -  Менять пароль пользователя.
 
 Сервис должен предоставлять RESTful API.
-/users GET page_num: int, page_size: int (список пользователей)
-/user POST login: str, password: str (регистрация пользователя)
-/user GET id: int (просмотр данных о пользователе, пока что только логин)
-/user DELETE id: int (удаление пользователя)
-/user PATCH id: int, password: str (смена пароля)
-/ POST login: str, password: str (выдача токена, собственно, аутентификация)
+- /users GET page_num: int, page_size: int (список пользователей)
+- /user POST login: str, password: str (регистрация пользователя)
+- /user GET id: int (просмотр данных о пользователе, пока что только логин)
+- /user DELETE id: int (удаление пользователя)
+- /user PATCH id: int, password: str (смена пароля)
+- / POST login: str, password: str (выдача токена, собственно, аутентификация)
 
 В случае возникновения ошибок, клиенты должна возвращаться информация об ошибке и соответствующий статус код.
 200 - ОК
