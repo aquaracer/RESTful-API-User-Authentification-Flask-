@@ -43,7 +43,7 @@
 ### Тестирование 
 Провести тестирование сервиса посредством Pytest.
 
-# Установка приложения 
+### Установка приложения 
 ```bash
 git clone https://github.com/aquaracer/RESTful-API-User-Authentification-Flask-.git user_auth_app
 cd user_auth_app
